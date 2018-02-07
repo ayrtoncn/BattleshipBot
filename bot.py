@@ -63,6 +63,7 @@ def search_target(opponent_map, map_size):
             else:
                 Xplus = opponent_map[(map_size * (X + 1) + Y)]['Damaged']
             if(not Yplus and not Ymin and not Xplus and not Xmin):
+                #target baru ditemukan belum sekeliling target masih belum tertembak
                 if(X != map_size - 1 and not opponent_map[(map_size * (X + 1) + Y)]['Missed']):
                     valid_cell = X + 1, Y
                     hit_targets.append(valid_cell)
@@ -79,6 +80,7 @@ def search_target(opponent_map, map_size):
                 targets = hit_targets[:]
                 break
             elif(Yplus or Ymin):
+                #target sudah memiliki hit di atasnya atau dibawahnya
                 tempY = Y + 1
                 while(tempY < map_size and opponent_map[(map_size * X + tempY)]['Damaged']):
                     tempY = tempY + 1
@@ -98,6 +100,7 @@ def search_target(opponent_map, map_size):
                 else:
                     print("hancur")
             elif(Xplus or Xmin):
+                #target sudah memiliki hit di kiri atau di kanannya
                 tempX = X + 1
                 while(tempX < map_size and opponent_map[(map_size * tempX + Y)]['Damaged']):
                     tempX = tempX + 1
