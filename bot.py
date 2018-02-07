@@ -90,7 +90,7 @@ def search_target(opponent_map, map_size):
                 tempY = Y - 1
                 while(tempY >= 0 and opponent_map[(map_size * X + tempY)]['Damaged']):
                     tempY = tempY - 1
-                if(tempY !=0 and not opponent_map[(map_size * X + tempY)]['Missed']):
+                if(tempY <0 and not opponent_map[(map_size * X + tempY)]['Missed']):
                     valid_cell = X, tempY
                     hit_targets.append(valid_cell)
                 print("miss Y")
@@ -110,7 +110,7 @@ def search_target(opponent_map, map_size):
                 tempX = X - 1
                 while(tempX >= 0 and opponent_map[(map_size * tempX + Y)]['Damaged']):
                     tempX = tempX - 1
-                if(tempX !=0 and not opponent_map[(map_size * tempX + Y)]['Missed']):
+                if(tempX <0 and not opponent_map[(map_size * tempX + Y)]['Missed']):
                     valid_cell = tempX, Y
                     hit_targets.append(valid_cell)
                 print("missX")
