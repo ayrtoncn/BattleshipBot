@@ -275,13 +275,55 @@ def place_ships():
     # Please place your ships in the following format <Shipname> <x> <y> <direction>
     # Ship names: Battleship, Cruiser, Carrier, Destroyer, Submarine
     # Directions: north east south west
+    
+    choice = random.randint(1,2)
+    if (map_size == 7):
+        if (choice == 1):
+            ships = ['Battleship 3 3 east',
+                    'Carrier 0 1 north',
+                    'Cruiser 2 1 north',
+                    'Destroyer 5 0 east',
+                    'Submarine 4 5 East'
+                    ]
+        else:
+            ships = ['Battleship 0 2 north',
+                    'Carrier 2 3 East',
+                    'Cruiser 4 0 north',
+                    'Destroyer 0 0 East',
+                    'Submarine 4 6 East'
+                    ]
 
-    ships = ['Battleship 1 0 north',
-             'Carrier 3 1 East',
-             'Cruiser 4 2 north',
-             'Destroyer 7 3 north',
-             'Submarine 1 8 East'
-             ]
+    elif(map_size == 10):
+        if (choice == 1):
+            ships = ['Battleship 1 0 north',
+                    'Carrier 3 1 East',
+                    'Cruiser 4 7 north',
+                    'Destroyer 7 3 north',
+                    'Submarine 1 8 East'
+                    ]            
+        else:
+            ships = ['Battleship 3 0 East',
+                    'Carrier 1 2 north',
+                    'Cruiser 3 7 East',
+                    'Destroyer 8 3 East',
+                    'Submarine 9 7 north'
+                    ]
+        
+    else: #belum jadi
+        if (choice == 1):
+            ships = ['Battleship 1 0 north',
+                    'Carrier 3 1 East',
+                    'Cruiser 4 2 north',
+                    'Destroyer 7 3 north',
+                    'Submarine 1 8 East'
+                    ]
+        else:
+            ships = ['Battleship 1 0 north',
+                    'Carrier 3 1 East',
+                    'Cruiser 4 2 north',
+                    'Destroyer 7 3 north',
+                    'Submarine 1 8 East'
+                    ]
 
     with open(os.path.join(output_path, place_ship_file), 'w') as f_out:
         for ship in ships:
