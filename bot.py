@@ -26,7 +26,7 @@ def main(player_key):
         # berisi lokasi kemungkinan dari kapal lawan
     else:
         search_target(state['OpponentMap']['Cells'],
-                      map_size, destroyer, energy)
+                      map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'])
 
 
 def output_shot(x, y, move):
@@ -36,8 +36,7 @@ def output_shot(x, y, move):
         f_out.write('\n')
     pass
 
-
-def search_target(opponent_map, map_size, destroyer, energy):
+def search_target(opponent_map, map_size, destroyer, energy, ship):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
@@ -64,7 +63,8 @@ def search_target(opponent_map, map_size, destroyer, energy):
         CornerDiagonal = 48
         CornerHorizontal = 56
         Seeker = 40
-    if(energy >= Seeker):
+    
+    if(energy >= Seeker and not(ship[0]['Destroyed'])):
         #prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
         for cell in opponent_map:
             if not cell['Damaged'] and not cell['Missed']:
