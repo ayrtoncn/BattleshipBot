@@ -309,20 +309,20 @@ def place_ships():
                     'Submarine 9 7 north'
                     ]
         
-    else: #belum jadi
+    else: 
         if (choice == 1):
-            ships = ['Battleship 1 0 north',
-                    'Carrier 3 1 East',
-                    'Cruiser 4 2 north',
-                    'Destroyer 7 3 north',
-                    'Submarine 1 8 East'
+            ships = ['Battleship 0 9 East',
+                    'Carrier 9 11 East',
+                    'Cruiser 10 3 north',
+                    'Destroyer 12 2 East',
+                    'Submarine 2 1 north'
                     ]
         else:
-            ships = ['Battleship 1 0 north',
-                    'Carrier 3 1 East',
-                    'Cruiser 4 2 north',
-                    'Destroyer 7 3 north',
-                    'Submarine 1 8 East'
+            ships = ['Battleship 6 11 East',
+                    'Carrier 1 5 north',
+                    'Cruiser 12 7 north',
+                    'Destroyer 0 1 East',
+                    'Submarine 13 0 north'
                     ]
 
     with open(os.path.join(output_path, place_ship_file), 'w') as f_out:
