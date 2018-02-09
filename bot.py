@@ -15,11 +15,11 @@ def main(player_key):
     # Retrieve current game state
     with open(os.path.join(output_path, game_state_file), 'r') as f_in:
         state = json.load(f_in)
-    # print(state)
+    print(state['PlayerMap']['Owner']['Ships'])
     destroyer = state['OpponentMap']['Ships'][0]['Destroyed'] and state['OpponentMap']['Ships'][2][
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
-    print(state['PlayerMap']['Owner']['Energy'])
+    #print(state['PlayerMap']['Owner']['Energy'])
     energy = state['PlayerMap']['Owner']['Energy']
     if state['Phase'] == 1:
         place_ships()
@@ -28,7 +28,49 @@ def main(player_key):
         search_target(state['OpponentMap']['Cells'],
                       map_size, destroyer, energy)
 
+def find_length(ship_type):
+    if (ship_type == 'Submarine'):
+        return 3
+    elif (ship_type == 'Carrier'):
+        return 5
+    elif(ship_type == 'Destroyer'):
+        return 2
+    elif(ship_type == 'Cruiser'):
+        return 3
+    else:
+        return 4
 
+def deploy_shield(ships, map_size):
+    if (map_size == 7):
+        return False
+    else:
+        for ship in ships:
+            if (not ship['Destroyed']):
+                countBefore = 0
+                countHit = 0
+                countAfter = 0
+                for cell in ship['Cells']:
+                    if (cell['Hit']):
+                        countHit = count + 1
+                        Xhitted = cell['X']
+                        Yhitted = cell['Y']
+                    elif (countHit == 0):
+                        countBefore = countBefore + 1
+                    else:
+                        countAfter = countAfter + 1
+                if (countHit == 0):
+                    continue  
+                else:
+                    if (countBefore != 0 and countAfter == 0):
+                        Xhitted = ship['Cells'][countBefore]['X']
+                        Yhitted = ship['Cells'][countBefore]['Y']
+                    output_shot(Xhitted, Yhitted, 8)
+                    return True
+            else:
+                continue
+        return False
+
+            
 def output_shot(x, y, move):
     # move = 1  # 1=fire shot command code
     with open(os.path.join(output_path, command_file), 'w') as f_out:
@@ -276,13 +318,13 @@ def place_ships():
     # Ship names: Battleship, Cruiser, Carrier, Destroyer, Submarine
     # Directions: north east south west
     
-    choice = random.randint(1,2)
+    pilihan = choice([1,2])
     if (map_size == 7):
-        if (choice == 1):
-            ships = ['Battleship 3 3 east',
+        if (pilihan == 1):
+            ships = ['Battleship 3 3 East',
                     'Carrier 0 1 north',
                     'Cruiser 2 1 north',
-                    'Destroyer 5 0 east',
+                    'Destroyer 5 0 East',
                     'Submarine 4 5 East'
                     ]
         else:
@@ -294,7 +336,7 @@ def place_ships():
                     ]
 
     elif(map_size == 10):
-        if (choice == 1):
+        if (pilihan == 1):
             ships = ['Battleship 1 0 north',
                     'Carrier 3 1 East',
                     'Cruiser 4 7 north',
@@ -310,7 +352,7 @@ def place_ships():
                     ]
         
     else: 
-        if (choice == 1):
+        if (pilihan == 1):
             ships = ['Battleship 0 9 East',
                     'Carrier 9 11 East',
                     'Cruiser 10 3 north',
