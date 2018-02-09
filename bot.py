@@ -15,7 +15,7 @@ def main(player_key):
     # Retrieve current game state
     with open(os.path.join(output_path, game_state_file), 'r') as f_in:
         state = json.load(f_in)
-    print(state['PlayerMap']['Owner']['Ships'])
+    #print(state['PlayerMap']['Owner']['Shield'])
     destroyer = state['OpponentMap']['Ships'][0]['Destroyed'] and state['OpponentMap']['Ships'][2][
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
@@ -25,7 +25,8 @@ def main(player_key):
         place_ships()
         # berisi lokasi kemungkinan dari kapal lawan
     else:
-        search_target(state['OpponentMap']['Cells'],
+        if (not (deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, state['PlayerMap']['Owner']['Shield']['CurrentCharges'], state['PlayerMap']['Owner']['Shield']['Active']))):
+            search_target(state['OpponentMap']['Cells'],
                       map_size, destroyer, energy)
 
 def find_length(ship_type):
@@ -40,34 +41,35 @@ def find_length(ship_type):
     else:
         return 4
 
-def deploy_shield(ships, map_size):
+def deploy_shield(ships, map_size, shield_charge, shield_active):
     if (map_size == 7):
         return False
     else:
-        for ship in ships:
-            if (not ship['Destroyed']):
-                countBefore = 0
-                countHit = 0
-                countAfter = 0
-                for cell in ship['Cells']:
-                    if (cell['Hit']):
-                        countHit = count + 1
-                        Xhitted = cell['X']
-                        Yhitted = cell['Y']
-                    elif (countHit == 0):
-                        countBefore = countBefore + 1
+        if ((map_size == 10) and (shield_charge == 2)) or ((map_size == 14) and (shield_charge == 3) and not shield_active):
+            for ship in ships:
+                if (not ship['Destroyed']):
+                    countBefore = 0
+                    countHit = 0
+                    countAfter = 0
+                    for cell in ship['Cells']:
+                        if (cell['Hit']):
+                            countHit = count + 1
+                            Xhitted = cell['X']
+                            Yhitted = cell['Y']
+                        elif (countHit == 0):
+                            countBefore = countBefore + 1
+                        else:
+                            countAfter = countAfter + 1
+                    if (countHit == 0):
+                        continue  
                     else:
-                        countAfter = countAfter + 1
-                if (countHit == 0):
-                    continue  
+                        if (countBefore != 0 and countAfter == 0):
+                            Xhitted = ship['Cells'][countBefore]['X']
+                            Yhitted = ship['Cells'][countBefore]['Y']
+                        output_shot(Xhitted, Yhitted, 8)
+                        return True
                 else:
-                    if (countBefore != 0 and countAfter == 0):
-                        Xhitted = ship['Cells'][countBefore]['X']
-                        Yhitted = ship['Cells'][countBefore]['Y']
-                    output_shot(Xhitted, Yhitted, 8)
-                    return True
-            else:
-                continue
+                    continue
         return False
 
             
