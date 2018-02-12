@@ -16,7 +16,7 @@ def main(player_key):
     # Retrieve current game state
     with open(os.path.join(output_path, game_state_file), 'r') as f_in:
         state = json.load(f_in)
-    # print(state['Phase'])
+    print(state['OpponentMa'])
     destroyer = state['OpponentMap']['Ships'][0]['Destroyed'] and state['OpponentMap']['Ships'][2][
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
@@ -27,7 +27,7 @@ def main(player_key):
     battle_map = initialize_map(map_size)
     if state['Phase'] == 1:
         place_ships()
-        save_json((-1,-1,-1),0)
+        save_json((-1, -1, -1), 0)
         # berisi lokasi kemungkinan dari kapal lawan
     else:
         with open('data.json', 'r') as outfile:
@@ -39,7 +39,7 @@ def main(player_key):
             destroy = False
         battle_map = update_map(
             state['OpponentMap']['Cells'], battle_map, map_size)
-        if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state,score)):
+        if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state, score)):
             search_target(state['OpponentMap']['Cells'],
                           map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map, destroy, score)
 
@@ -51,6 +51,37 @@ def save_json(prev_command, score):
     data['Score'] = score
     with open('data.json', 'w') as outfile:
         json.dump(data, outfile)
+
+
+def destroyed(opponent_map, battle_map, map_size, prev_command, ship):
+    X = prev_command[1]
+    Y = prev_command[2]
+    ship_long = find_length(ship)
+    temp = battle_map[:]
+    if(opponent_map[(map_size * X + Y)]['Damaged']):
+        if((Y != 0 and opponent_map[(map_size * X + Y) - 1]['Damaged'] or (Y !=map_size-1 and opponent_map[(map_size * X + Y) + 1]['Damaged'])):
+            i = Y
+            j = Y
+            while(i != map_size-1 and  opponent_map[(map_size * X + i)]['Damaged']):
+                battle_map[X][i] = -99
+                i +=1
+            while(j != 0 and  opponent_map[(map_size * X + j)]['Damaged']):
+                battle_map[X][j] = -99
+                j -=1
+            if(ship_long == i+j-2):
+                return True,battle_map
+        elif((Y != 0 and opponent_map[(map_size * (X-1) + Y)]['Damaged'] or (Y !=map_size-1 and opponent_map[(map_size * (X+1) + Y)]['Damaged'])):
+            i = X
+            j = X
+            while(i != map_size-1 and  opponent_map[(map_size * i + Y)]['Damaged']):
+                battle_map[i][Y] = -99
+                i +=1
+            while(j != 0 and  opponent_map[(map_size * j + Y)]['Damaged']):
+                battle_map[j][Y] = -99
+                j -=1
+            if(ship_long == i+j-2):
+                return True,battle_map
+    return False,temp
 
 
 def initialize_map(map_size):
@@ -82,23 +113,6 @@ def update_map(opponent_map, battle_map, map_size):
             if(Y != 0):
                 battle_map[X][Y - 1] -= battle_map[X][Y] / 2
             battle_map[X][Y] = 0
-    '''for ship in ships:
-        if(not ship['Destroyed']):
-            cell = ship['cell']
-            idx = 0
-            while(idx <= len(cell)):
-                map[cell[idx]['X']][cell[idx]['Y']] = 0
-                if((idx != 0 and cell[idx + 1]['X'] == cell[idx]['X']) or (idx != len(cell) and cell[idx + 1]['X'] == cell[idx]['X'])):
-                    map[cell[idx]['X'] + 1][cell[idx]['Y']] -= 20
-                    map[cell[idx]['X'] - 1][cell[idx]['Y']] -= 20
-                    map[cell[idx]['X']][cell[idx]['Y'] + 1] += 20
-                    map[cell[idx]['X']][cell[idx]['Y'] + 1] += 20
-                elif((idx != 0 and cell[idx + 1]['Y'] == cell[idx]['Y']) or (idx != len(cell) and cell[idx + 1]['Y'] == cell[idx]['Y'])):
-                    map[cell[idx]['X'] + 1][cell[idx]['Y']] += 20
-                    map[cell[idx]['X'] - 1][cell[idx]['Y']] += 20
-                    map[cell[idx]['X']][cell[idx]['Y'] + 1] -= 20
-                    map[cell[idx]['X']][cell[idx]['Y'] + 1] -= 20
-                idx = idx + 1'''
     return battle_map
 
 
@@ -107,10 +121,6 @@ def max(battle_map, hit_targets):
     for target in hit_targets:
         if(battle_map[max[0]][max[1]] < battle_map[target[0]][target[1]]):
             max = target
-    '''for x in battle_map:
-        for y in x:
-            if(battle_map[max[0]][max[1]] < battle_map[x][y]):
-                max = (x, y)'''
     return max
 
 
@@ -127,7 +137,7 @@ def find_length(ship_type):
         return 4
 
 
-def deploy_shield(ships, map_size, shield_charge, shield_active,score):
+def deploy_shield(ships, map_size, shield_charge, shield_active, score):
     if (map_size == 7):
         return False
     else:
@@ -153,7 +163,7 @@ def deploy_shield(ships, map_size, shield_charge, shield_active,score):
                         Xhitted = ship['Cells'][countBefore]['X']
                         Yhitted = ship['Cells'][countBefore]['Y']
                     deploy_at = Xhitted, Yhitted
-                    output_shot(*deploy_at, 8,score)
+                    output_shot(*deploy_at, 8, score)
                     return True
         return False
 
