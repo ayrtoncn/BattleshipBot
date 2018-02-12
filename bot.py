@@ -26,7 +26,7 @@ def main(player_key):
         # berisi lokasi kemungkinan dari kapal lawan
     else:
         search_target(state['OpponentMap']['Cells'],
-                      map_size, destroyer, energy)
+                      map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'])
 
 
 def output_shot(x, y, move):
@@ -36,8 +36,7 @@ def output_shot(x, y, move):
         f_out.write('\n')
     pass
 
-
-def search_target(opponent_map, map_size, destroyer, energy):
+def search_target(opponent_map, map_size, destroyer, energy, ship):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
