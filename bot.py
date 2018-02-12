@@ -21,11 +21,14 @@ def main(player_key):
     map_size = state['MapDimension']
     #print(state['PlayerMap']['Owner']['Energy'])
     energy = state['PlayerMap']['Owner']['Energy']
+    shield_charge = state['PlayerMap']['Owner']['Shield']['CurrentCharges']
+    shield_state = state['PlayerMap']['Owner']['Shield']['Active'] #shieldnya active ato engga
+    save_json((1,2,3),state['OpponentMap'])
     if state['Phase'] == 1:
         place_ships()
         # berisi lokasi kemungkinan dari kapal lawan
     else:
-        if (not (deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, state['PlayerMap']['Owner']['Shield']['CurrentCharges'], state['PlayerMap']['Owner']['Shield']['Active']))):
+        if (not (deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state))):
             search_target(state['OpponentMap']['Cells'],
                       map_size, destroyer, energy)
 
@@ -45,31 +48,30 @@ def deploy_shield(ships, map_size, shield_charge, shield_active):
     if (map_size == 7):
         return False
     else:
-        if ((map_size == 10) and (shield_charge == 2)) or ((map_size == 14) and (shield_charge == 3) and not shield_active):
+        if ((map_size == 10) and (shield_charge >= 2)) or ((map_size == 14) and (shield_charge >= 3) and not shield_active):
             for ship in ships:
+                countBefore = 0
+                countHit = 0
+                countAfter = 0
                 if (not ship['Destroyed']):
-                    countBefore = 0
-                    countHit = 0
-                    countAfter = 0
                     for cell in ship['Cells']:
                         if (cell['Hit']):
-                            countHit = count + 1
+                            countHit = countHit + 1
                             Xhitted = cell['X']
                             Yhitted = cell['Y']
                         elif (countHit == 0):
                             countBefore = countBefore + 1
                         else:
                             countAfter = countAfter + 1
-                    if (countHit == 0):
-                        continue  
-                    else:
-                        if (countBefore != 0 and countAfter == 0):
-                            Xhitted = ship['Cells'][countBefore]['X']
-                            Yhitted = ship['Cells'][countBefore]['Y']
-                        output_shot(Xhitted, Yhitted, 8)
-                        return True
+                if (countHit == 0):
+                    continue  
                 else:
-                    continue
+                    if (countBefore != 0 and countAfter == 0):
+                        Xhitted = ship['Cells'][countBefore]['X']
+                        Yhitted = ship['Cells'][countBefore]['Y']
+                    deploy_at = Xhitted, Yhitted
+                    output_shot(*deploy_at, 8)
+                    return True
         return False
 
             
@@ -314,6 +316,15 @@ def search_target(opponent_map, map_size, destroyer, energy):
     output_shot(*target, 1)
     return
 
+def save_json(prev_command, OpponentMap):
+    data = {}
+    data['PrevCommand'] = []
+    data['OpponentMap'] = []
+    data['PrevCommand'].append(prev_command)
+    data['OpponentMap'].append(OpponentMap)
+    with open('data.json', 'w') as outfile:
+        json.dump(data, outfile)
+ 
 
 def place_ships():
     # Please place your ships in the following format <Shipname> <x> <y> <direction>
@@ -341,7 +352,7 @@ def place_ships():
         if (pilihan == 1):
             ships = ['Battleship 1 0 north',
                     'Carrier 3 1 East',
-                    'Cruiser 4 7 north',
+                    'Cruiser 5 7 north',
                     'Destroyer 7 3 north',
                     'Submarine 1 8 East'
                     ]            
