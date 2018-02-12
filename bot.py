@@ -1,6 +1,8 @@
 import argparse
 import json
 import os
+import numpy as np
+import math
 from random import choice
 
 command_file = "command.txt"
@@ -28,6 +30,14 @@ def main(player_key):
         search_target(state['OpponentMap']['Cells'],
                       map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'])
 
+def initialize_map(map_size):
+    battle_map = np.empty((map_size, map_size))
+    a = math.floor(map_size/2)
+    for i in range (map_size):
+        for j in range (map_size):
+            k = i+1
+            l = j+1
+            battle_map[i][j] = (-(k * (k-a))/(a/2)) + (-(j * (j-a))/(a/2)) + 2
 
 def output_shot(x, y, move):
     # move = 1  # 1=fire shot command code
