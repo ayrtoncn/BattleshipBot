@@ -35,10 +35,17 @@ def main(player_key):
         score = state['PlayerMap']['Owner']['Points']
         if(score - data['Score'] >= 30):
             destroy = True
+            hit = True
+        elif (score - data['Score'] == 10):
+            destroy = False
+            hit = True
         else:
             destroy = False
+            hit = False
+        lastX = data['PrevCommand'][0][1]
+        lastY = data['PrevCommand'][0][2]
         battle_map = update_map(
-            state['OpponentMap']['Cells'], battle_map, map_size)
+            state['OpponentMap']['Cells'], battle_map, map_size, destroy, hit, lastX, lastY)
         if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state,score)):
             search_target(state['OpponentMap']['Cells'],
                           map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map, destroy, score)
@@ -64,24 +71,45 @@ def initialize_map(map_size):
             temp_battle_map.append(
                 (-1 * (i - 0) * (i - (map_size - 1))) + (-1 * (j - 0) * (j - (map_size - 1))) + 1)
         battle_map.append(temp_battle_map)
-        # print(battle_map)
+        print(battle_map)
     return battle_map
 
 
-def update_map(opponent_map, battle_map, map_size):
-    for cell in opponent_map:
-        X = cell['X']
-        Y = cell['Y']
-        if(cell['Missed']):
-            if(X != 0):
-                battle_map[X - 1][Y] -= battle_map[X][Y] / 2
-            if(X != map_size - 1):
-                battle_map[X + 1][Y] -= battle_map[X][Y] / 2
-            if(Y != map_size - 1):
-                battle_map[X][Y + 1] -= battle_map[X][Y] / 2
-            if(Y != 0):
-                battle_map[X][Y - 1] -= battle_map[X][Y] / 2
-            battle_map[X][Y] = 0
+def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
+    if not destroy:
+        if not hit:
+            for cell in opponent_map:
+                X = cell['X']
+                Y = cell['Y']
+                if(cell['Missed']):
+                    if(X != 0):
+                        battle_map[X - 1][Y] -= battle_map[X][Y] / 2
+                    if(X != map_size - 1):
+                        battle_map[X + 1][Y] -= battle_map[X][Y] / 2
+                    if(Y != map_size - 1):
+                        battle_map[X][Y + 1] -= battle_map[X][Y] / 2
+                    if(Y != 0):
+                        battle_map[X][Y - 1] -= battle_map[X][Y] / 2
+                    battle_map[X][Y] = 0
+        else:
+            for cell in opponent_map:
+                X = cell['X']
+                Y = cell['Y']
+                if (((X == lastX - 1 or X == lastX + 1) and Y == lastY) or (X == lastX and (Y == lastY + 1 or Y == lastY - 1))) and (not cell['Damaged'] and not cell['Missed']):
+                    battle_map[X][Y] = 20
+                else:
+                    battle_map[X][Y] = 0
+    else:
+        for cell in opponent_map:
+            X = cell['X']
+            Y = cell['Y']
+            if not cell['Missed']:
+                battle_map[X][Y] = (-1 * (X - 0) * (X - (map_size - 1))) + (-1 * (Y - 0) * (Y - (map_size - 1))) + 1
+            else:
+                battle_map[X][Y] = 0
+    
+    print(battle_map)
+
     '''for ship in ships:
         if(not ship['Destroyed']):
             cell = ship['cell']
@@ -127,7 +155,7 @@ def find_length(ship_type):
         return 4
 
 
-def deploy_shield(ships, map_size, shield_charge, shield_active,score):
+def deploy_shield(ships, map_size, shield_charge, shield_active, score):
     if (map_size == 7):
         return False
     else:
