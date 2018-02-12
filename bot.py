@@ -81,16 +81,26 @@ def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
             for cell in opponent_map:
                 X = cell['X']
                 Y = cell['Y']
-                if(cell['Missed']):
-                    if(X != 0):
-                        battle_map[X - 1][Y] -= battle_map[X][Y] / 2
-                    if(X != map_size - 1):
-                        battle_map[X + 1][Y] -= battle_map[X][Y] / 2
-                    if(Y != map_size - 1):
-                        battle_map[X][Y + 1] -= battle_map[X][Y] / 2
-                    if(Y != 0):
-                        battle_map[X][Y - 1] -= battle_map[X][Y] / 2
+                if not cell['Missed']:
+                    battle_map[X][Y] = (-1 * (X - 0) * (X - (map_size - 1))) + (-1 * (Y - 0) * (Y - (map_size - 1))) + 1
+                else:
                     battle_map[X][Y] = 0
+                if (X == lastX and Y != lastY) and battle_map[X][Y] != 0:
+                    if map_size == 7:
+                        k = 3
+                    elif map_size == 10:
+                        k = 5
+                    elif map_size == 14:
+                        k = 10
+                    battle_map[X][Y] -= abs(Y - lastY) * k
+                elif (X != lastX and Y == lastY) and battle_map[X][Y] != 0:
+                    if map_size == 7:
+                        k = 3
+                    elif map_size == 10:
+                        k = 5
+                    elif map_size == 14:
+                        k = 10
+                    battle_map[X][Y] -= abs(X - lastX) * k
         else:
             for cell in opponent_map:
                 X = cell['X']
