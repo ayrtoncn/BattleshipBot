@@ -21,21 +21,37 @@ def main(player_key):
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
     energy = state['PlayerMap']['Owner']['Energy']
+    shield_charge = state['PlayerMap']['Owner']['Shield']['CurrentCharges']
+    shield_state = state['PlayerMap']['Owner']['Shield']['Active']
+
     battle_map = initialize_map(map_size)
     if state['Phase'] == 1:
         place_ships()
+        save_json((-1,-1,-1),0)
         # berisi lokasi kemungkinan dari kapal lawan
     else:
-        battle_map = update_map(state['OpponentMap']['Cells'], battle_map,map_size)
-        search_target(state['OpponentMap']['Cells'],
-                      map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map)
+        with open('data.json', 'r') as outfile:
+            data = json.load(outfile)
+        score = state['PlayerMap']['Owner']['Points']
+        if(score - data['Score'] >= 30):
+            destroy = True
+        else:
+            destroy = False
+        battle_map = update_map(
+            state['OpponentMap']['Cells'], battle_map, map_size)
+        if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state,score)):
+            search_target(state['OpponentMap']['Cells'],
+                          map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map, destroy, score)
 
-def save_json(prev_command):
+
+def save_json(prev_command, score):
     data = {}
     data['PrevCommand'] = []
     data['PrevCommand'].append(prev_command)
+    data['Score'] = score
     with open('data.json', 'w') as outfile:
         json.dump(data, outfile)
+
 
 def initialize_map(map_size):
     battle_map = []
@@ -52,20 +68,20 @@ def initialize_map(map_size):
     return battle_map
 
 
-def update_map(opponent_map, battle_map,map_size):
+def update_map(opponent_map, battle_map, map_size):
     for cell in opponent_map:
         X = cell['X']
         Y = cell['Y']
         if(cell['Missed']):
-            battle_map[X][Y] = 0
             if(X != 0):
-                battle_map[X - 1][Y] -= 5
-            if(X!=map_size-1):
-                battle_map[X + 1][Y] -= 5
-            if(Y!=map_size-1):
-                battle_map[X][Y + 1] -= 5
-            if(Y!=0):
-                battle_map[X][Y - 1] -= 5
+                battle_map[X - 1][Y] -= battle_map[X][Y] / 2
+            if(X != map_size - 1):
+                battle_map[X + 1][Y] -= battle_map[X][Y] / 2
+            if(Y != map_size - 1):
+                battle_map[X][Y + 1] -= battle_map[X][Y] / 2
+            if(Y != 0):
+                battle_map[X][Y - 1] -= battle_map[X][Y] / 2
+            battle_map[X][Y] = 0
     '''for ship in ships:
         if(not ship['Destroyed']):
             cell = ship['cell']
@@ -98,16 +114,60 @@ def max(battle_map, hit_targets):
     return max
 
 
-def output_shot(x, y, move):
+def find_length(ship_type):
+    if (ship_type == 'Submarine'):
+        return 3
+    elif (ship_type == 'Carrier'):
+        return 5
+    elif(ship_type == 'Destroyer'):
+        return 2
+    elif(ship_type == 'Cruiser'):
+        return 3
+    else:
+        return 4
+
+
+def deploy_shield(ships, map_size, shield_charge, shield_active,score):
+    if (map_size == 7):
+        return False
+    else:
+        if ((map_size == 10) and (shield_charge >= 2)) or ((map_size == 14) and (shield_charge >= 3) and not shield_active):
+            for ship in ships:
+                countBefore = 0
+                countHit = 0
+                countAfter = 0
+                if (not ship['Destroyed']):
+                    for cell in ship['Cells']:
+                        if (cell['Hit']):
+                            countHit = countHit + 1
+                            Xhitted = cell['X']
+                            Yhitted = cell['Y']
+                        elif (countHit == 0):
+                            countBefore = countBefore + 1
+                        else:
+                            countAfter = countAfter + 1
+                if (countHit == 0):
+                    continue
+                else:
+                    if (countBefore != 0 and countAfter == 0):
+                        Xhitted = ship['Cells'][countBefore]['X']
+                        Yhitted = ship['Cells'][countBefore]['Y']
+                    deploy_at = Xhitted, Yhitted
+                    output_shot(*deploy_at, 8,score)
+                    return True
+        return False
+
+
+def output_shot(x, y, move, score):
     # move = 1  # 1=fire shot command code
-    save_json((move,x,y))
+    save_json((move, x, y), score)
     with open(os.path.join(output_path, command_file), 'w') as f_out:
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
     pass
 
 
-def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map):
+def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map, destroy, score):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
@@ -128,7 +188,7 @@ def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map):
         shot = 3
 
     for cell in opponent_map:
-        if cell['Damaged']:
+        if cell['Damaged'] and not destroy:
             # hit_targets adalah target yang mungkin ditembak
             X = cell['X']
             Y = cell['Y']
@@ -302,8 +362,8 @@ def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map):
         move = 1
         # prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
     #target = choice(targets)
-    target = max(battle_map,targets)
-    output_shot(*target, move)
+    target = max(battle_map, targets)
+    output_shot(*target, move, score)
     return
 
 
@@ -312,12 +372,54 @@ def place_ships():
     # Ship names: Battleship, Cruiser, Carrier, Destroyer, Submarine
     # Directions: north east south west
 
-    ships = ['Battleship 1 0 north',
-             'Carrier 3 1 East',
-             'Cruiser 4 2 north',
-             'Destroyer 7 3 north',
-             'Submarine 1 8 East'
-             ]
+    pilihan = choice([1, 2])
+    if (map_size == 7):
+        if (pilihan == 1):
+            ships = ['Battleship 3 3 East',
+                     'Carrier 0 1 north',
+                     'Cruiser 2 1 north',
+                     'Destroyer 5 0 East',
+                     'Submarine 4 5 East'
+                     ]
+        else:
+            ships = ['Battleship 0 2 north',
+                     'Carrier 2 3 East',
+                     'Cruiser 4 0 north',
+                     'Destroyer 0 0 East',
+                     'Submarine 4 6 East'
+                     ]
+
+    elif(map_size == 10):
+        if (pilihan == 1):
+            ships = ['Battleship 1 0 north',
+                     'Carrier 3 1 East',
+                     'Cruiser 5 7 north',
+                     'Destroyer 7 3 north',
+                     'Submarine 1 8 East'
+                     ]
+        else:
+            ships = ['Battleship 3 0 East',
+                     'Carrier 1 2 north',
+                     'Cruiser 3 7 East',
+                     'Destroyer 8 3 East',
+                     'Submarine 9 7 north'
+                     ]
+
+    else:
+        if (pilihan == 1):
+            ships = ['Battleship 0 9 East',
+                     'Carrier 9 11 East',
+                     'Cruiser 10 3 north',
+                     'Destroyer 12 2 East',
+                     'Submarine 2 1 north'
+                     ]
+        else:
+            ships = ['Battleship 6 11 East',
+                     'Carrier 1 5 north',
+                     'Cruiser 12 7 north',
+                     'Destroyer 0 1 East',
+                     'Submarine 13 0 north'
+                     ]
 
     with open(os.path.join(output_path, place_ship_file), 'w') as f_out:
         for ship in ships:
