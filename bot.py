@@ -49,21 +49,21 @@ def search_target(opponent_map, map_size, destroyer, energy):
         Corner = 20
         CornerDiagonal = 24
         CornerHorizontal = 28
-        Seeker = 20
+        Seeker = 24
     elif(map_size == 10):
         DoubleVertikal = 24
         DoubleHorizontal = 24
         Corner = 30
         CornerDiagonal = 36
         CornerHorizontal = 42
-        Seeker = 30
+        Seeker = 36
     elif(map_size == 14):
         DoubleVertikal = 32
         DoubleHorizontal = 32
         Corner = 40
         CornerDiagonal = 48
         CornerHorizontal = 56
-        Seeker = 40
+        Seeker = 48
     if(energy >= Seeker):
         #prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
         for cell in opponent_map:
