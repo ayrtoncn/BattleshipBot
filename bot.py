@@ -19,7 +19,7 @@ def main(player_key):
     destroyer = state['OpponentMap']['Ships'][0]['Destroyed'] and state['OpponentMap']['Ships'][2][
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
-    print(state['PlayerMap']['Owner']['Energy'])
+    print(state['PlayerMap']['Owner']['Ships'])
     energy = state['PlayerMap']['Owner']['Energy']
     if state['Phase'] == 1:
         place_ships()
@@ -42,13 +42,19 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
     #  code 1 is your choice)
     targets = []
     temp_targets = []
-    if(map_size == 7):
+    DoubleVertikal = ship[1]['Weapons'][1]['EnergyRequired']
+    DoubleHorizontal = ship[1]['Weapons'][1]['EnergyRequired']
+    Corner = ship[3]['Weapons'][1]['EnergyRequired']
+    CrossDiagonal = ship[2]['Weapons'][1]['EnergyRequired']
+    CrossHorizontal = ship[4]['Weapons'][1]['EnergyRequired']
+    Seeker = ship[0]['Weapons'][1]['EnergyRequired']
+    '''if(map_size == 7):
         DoubleVertikal = 16
         DoubleHorizontal = 16
         Corner = 20
         CornerDiagonal = 24
         CornerHorizontal = 28
-        Seeker = 24
+        Seeker = 
     elif(map_size == 10):
         DoubleVertikal = 24
         DoubleHorizontal = 24
@@ -62,8 +68,17 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
         Corner = 40
         CornerDiagonal = 48
         CornerHorizontal = 56
-        Seeker = 48
-    if(energy >= Seeker):
+        Seeker = 48'''
+    if(energy >= Seeker and not ship[0]['Destroyed']):
+        move = 7
+    elif(energy >= CrossDiagonal and not ship[2]['Destroyed']):
+        move = 5
+    elif(energy >= CrossHorizontal and not ship[4]['Destroyed']):
+        move 6
+    elif(energy >= Corner and not ship[3]['Destroyed']):
+        move 4
+    elif(energy >= DoubleVertikal and not ship[1]['Destroyed']):
+        move choice([1,2])
         #prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
         for cell in opponent_map:
             if not cell['Damaged'] and not cell['Missed']:
@@ -98,7 +113,7 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
         if(targets == []):
             targets = temp_targets[:]
         target = choice(targets)
-        output_shot(*target, 7)
+        output_shot(*target, move)
         return
     if(destroyer):
         #tinggal kapal yang panjangnya 2 tembak dengan jarak selang 2
