@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import numpy as np
 import math
 from random import choice
 
@@ -17,116 +16,113 @@ def main(player_key):
     # Retrieve current game state
     with open(os.path.join(output_path, game_state_file), 'r') as f_in:
         state = json.load(f_in)
-    # print(state)
+    # print(state['Phase'])
     destroyer = state['OpponentMap']['Ships'][0]['Destroyed'] and state['OpponentMap']['Ships'][2][
         'Destroyed'] and state['OpponentMap']['Ships'][3]['Destroyed'] and state['OpponentMap']['Ships'][4]['Destroyed']
     map_size = state['MapDimension']
-    print(state['PlayerMap']['Owner']['Ships'])
     energy = state['PlayerMap']['Owner']['Energy']
+    battle_map = initialize_map(map_size)
     if state['Phase'] == 1:
         place_ships()
         # berisi lokasi kemungkinan dari kapal lawan
     else:
+        battle_map = update_map(state['OpponentMap']['Cells'], battle_map,map_size)
         search_target(state['OpponentMap']['Cells'],
-                      map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'])
+                      map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map)
+
+def save_json(prev_command):
+    data = {}
+    data['PrevCommand'] = []
+    data['PrevCommand'].append(prev_command)
+    with open('data.json', 'w') as outfile:
+        json.dump(data, outfile)
 
 def initialize_map(map_size):
-    battle_map = np.empty((map_size, map_size))
-    a = math.floor(map_size/2)
-    for i in range (map_size):
-        for j in range (map_size):
-            k = i+1
-            l = j+1
-            battle_map[i][j] = (-(k * (k-a))/(a/2)) + (-(j * (j-a))/(a/2)) + 2
+    battle_map = []
+    a = (map_size / 2)
+    for i in range(map_size):
+        temp_battle_map = []
+        for j in range(map_size):
+            k = i + 1
+            l = j + 1
+            temp_battle_map.append(
+                (-1 * (i - 0) * (i - (map_size - 1))) + (-1 * (j - 0) * (j - (map_size - 1))) + 1)
+        battle_map.append(temp_battle_map)
+        # print(battle_map)
+    return battle_map
+
+
+def update_map(opponent_map, battle_map,map_size):
+    for cell in opponent_map:
+        X = cell['X']
+        Y = cell['Y']
+        if(cell['Missed']):
+            battle_map[X][Y] = 0
+            if(X != 0):
+                battle_map[X - 1][Y] -= 5
+            if(X!=map_size-1):
+                battle_map[X + 1][Y] -= 5
+            if(Y!=map_size-1):
+                battle_map[X][Y + 1] -= 5
+            if(Y!=0):
+                battle_map[X][Y - 1] -= 5
+    '''for ship in ships:
+        if(not ship['Destroyed']):
+            cell = ship['cell']
+            idx = 0
+            while(idx <= len(cell)):
+                map[cell[idx]['X']][cell[idx]['Y']] = 0
+                if((idx != 0 and cell[idx + 1]['X'] == cell[idx]['X']) or (idx != len(cell) and cell[idx + 1]['X'] == cell[idx]['X'])):
+                    map[cell[idx]['X'] + 1][cell[idx]['Y']] -= 20
+                    map[cell[idx]['X'] - 1][cell[idx]['Y']] -= 20
+                    map[cell[idx]['X']][cell[idx]['Y'] + 1] += 20
+                    map[cell[idx]['X']][cell[idx]['Y'] + 1] += 20
+                elif((idx != 0 and cell[idx + 1]['Y'] == cell[idx]['Y']) or (idx != len(cell) and cell[idx + 1]['Y'] == cell[idx]['Y'])):
+                    map[cell[idx]['X'] + 1][cell[idx]['Y']] += 20
+                    map[cell[idx]['X'] - 1][cell[idx]['Y']] += 20
+                    map[cell[idx]['X']][cell[idx]['Y'] + 1] -= 20
+                    map[cell[idx]['X']][cell[idx]['Y'] + 1] -= 20
+                idx = idx + 1'''
+    return battle_map
+
+
+def max(battle_map, hit_targets):
+    max = hit_targets[0]
+    for target in hit_targets:
+        if(battle_map[max[0]][max[1]] < battle_map[target[0]][target[1]]):
+            max = target
+    '''for x in battle_map:
+        for y in x:
+            if(battle_map[max[0]][max[1]] < battle_map[x][y]):
+                max = (x, y)'''
+    return max
+
 
 def output_shot(x, y, move):
     # move = 1  # 1=fire shot command code
+    save_json((move,x,y))
     with open(os.path.join(output_path, command_file), 'w') as f_out:
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
     pass
 
-def search_target(opponent_map, map_size, destroyer, energy, ship):
+
+def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
     targets = []
     temp_targets = []
+    hit_targets = []
     DoubleVertikal = ship[1]['Weapons'][1]['EnergyRequired']
     DoubleHorizontal = ship[1]['Weapons'][1]['EnergyRequired']
     Corner = ship[3]['Weapons'][1]['EnergyRequired']
     CrossDiagonal = ship[2]['Weapons'][1]['EnergyRequired']
     CrossHorizontal = ship[4]['Weapons'][1]['EnergyRequired']
     Seeker = ship[0]['Weapons'][1]['EnergyRequired']
-    '''if(map_size == 7):
-        DoubleVertikal = 16
-        DoubleHorizontal = 16
-        Corner = 20
-        CornerDiagonal = 24
-        CornerHorizontal = 28
-        Seeker = 
-    elif(map_size == 10):
-        DoubleVertikal = 24
-        DoubleHorizontal = 24
-        Corner = 30
-        CornerDiagonal = 36
-        CornerHorizontal = 42
-        Seeker = 36
-    elif(map_size == 14):
-        DoubleVertikal = 32
-        DoubleHorizontal = 32
-        Corner = 40
-        CornerDiagonal = 48
-        CornerHorizontal = 56
-        Seeker = 48'''
-    if(energy >= Seeker and not ship[0]['Destroyed']):
-        move = 7
-    elif(energy >= CrossDiagonal and not ship[2]['Destroyed']):
-        move = 5
-    elif(energy >= CrossHorizontal and not ship[4]['Destroyed']):
-        move 6
-    elif(energy >= Corner and not ship[3]['Destroyed']):
-        move 4
-    elif(energy >= DoubleVertikal and not ship[1]['Destroyed']):
-        move choice([1,2])
-        #prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
-        for cell in opponent_map:
-            if not cell['Damaged'] and not cell['Missed']:
-                # jika cell belum damaged maupun masih missed
-                X = cell['X']
-                Y = cell['Y']
-                if(Y == 0):
-                    Ymin = False
-                else:
-                    Ymin = opponent_map[(
-                        map_size * X + Y) - 1]['Missed'] or opponent_map[(map_size * X + Y) - 1]['Damaged']
-                if(Y == map_size - 1):
-                    Yplus = False
-                else:
-                    Yplus = opponent_map[(
-                        map_size * X + Y) + 1]['Missed'] or opponent_map[(map_size * X + Y) + 1]['Damaged']
-                if(X == 0):
-                    Xmin = False
-                else:
-                    Xmin = opponent_map[(
-                        map_size * (X - 1) + Y)]['Missed'] or opponent_map[(map_size * (X - 1) + Y)]['Damaged']
-                if(X == map_size - 1):
-                    Xplus = False
-                else:
-                    Xplus = opponent_map[(
-                        map_size * (X + 1) + Y)]['Missed'] or opponent_map[(map_size * (X + 1) + Y)]['Damaged']
-                if not(Ymin or Yplus or Xmin or Xplus):
-                    valid_cell = cell['X'], cell['Y']
-                    targets.append(valid_cell)
-                valid_cell = cell['X'], cell['Y']
-                temp_targets.append(valid_cell)
-        if(targets == []):
-            targets = temp_targets[:]
-        target = choice(targets)
-        output_shot(*target, move)
-        return
+
     if(destroyer):
-        #tinggal kapal yang panjangnya 2 tembak dengan jarak selang 2
+        # tinggal kapal yang panjangnya 2 tembak dengan jarak selang 2
         shot = 2
     else:
         shot = 3
@@ -134,7 +130,6 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
     for cell in opponent_map:
         if cell['Damaged']:
             # hit_targets adalah target yang mungkin ditembak
-            hit_targets = []
             X = cell['X']
             Y = cell['Y']
             # cek kiri kanan atas bawah kalau yang atas udh kena maka tembaknya ke atas kalau ga kebawahnya dan sebaliknya
@@ -221,7 +216,7 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
                     break
         if not cell['Damaged'] and not cell['Missed']:
             # jika cell belum damaged maupun masih missed
-            #xmin,ymin, xplus, y plus berguna untuk mengecek sekeliling target dan minmin dan plusplus mengecek 2 kotak dari target
+            # xmin,ymin, xplus, y plus berguna untuk mengecek sekeliling target dan minmin dan plusplus mengecek 2 kotak dari target
             X = cell['X']
             Y = cell['Y']
             if(Y == 0):
@@ -286,12 +281,29 @@ def search_target(opponent_map, map_size, destroyer, energy, ship):
                 targets.append(valid_cell)
             valid_cell = cell['X'], cell['Y']
             temp_targets.append(valid_cell)
-            #temp target berguna untuk menembak target secara random jika kondisi tidak ada yang memenuhi
+            # temp target berguna untuk menembak target secara random jika kondisi tidak ada yang memenuhi
     if(targets == []):
-        #jika target tidak ada yang memenuhi tembak random
+        # jika target tidak ada yang memenuhi tembak random
         targets = temp_targets[:]
-    target = choice(targets)
-    output_shot(*target, 1)
+    if(hit_targets != targets):
+        if(energy >= Seeker and not ship[0]['Destroyed']):
+            move = 7
+        elif(energy >= CrossDiagonal and not ship[2]['Destroyed']):
+            move = 5
+        elif(energy >= CrossHorizontal and not ship[4]['Destroyed']):
+            move = 6
+        elif(energy >= Corner and not ship[3]['Destroyed']):
+            move = 4
+        elif(energy >= DoubleVertikal and not ship[1]['Destroyed']):
+            move = choice([1, 2])
+        else:
+            move = 1
+    else:
+        move = 1
+        # prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
+    #target = choice(targets)
+    target = max(battle_map,targets)
+    output_shot(*target, move)
     return
 
 
