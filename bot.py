@@ -105,7 +105,7 @@ def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
             for cell in opponent_map:
                 X = cell['X']
                 Y = cell['Y']
-                if (((X == lastX - 1 or X == lastX + 1) and Y == lastY) or (X == lastX and (Y == lastY + 1 or Y == lastY - 1))) and (not cell['Damaged'] and not cell['Missed']):
+                if (((X == lastX - 1 or X == lastX + 1) and Y == lastY) or (X == lastX and (Y == lastY + 1 or Y == lastY - 1))) and (not cell['Missed'] and not cell['Damaged']):
                     battle_map[X][Y] = 20
                 else:
                     battle_map[X][Y] = 0
@@ -113,7 +113,7 @@ def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
         for cell in opponent_map:
             X = cell['X']
             Y = cell['Y']
-            if not cell['Missed']:
+            if not cell['Missed'] and not cell['Damaged']:
                 battle_map[X][Y] = (-1 * (X - 0) * (X - (map_size - 1))) + (-1 * (Y - 0) * (Y - (map_size - 1))) + 1
             else:
                 battle_map[X][Y] = 0
@@ -385,15 +385,15 @@ def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map, d
         targets = temp_targets[:]
     if(hit_targets != targets):
         if(energy >= Seeker and not ship[0]['Destroyed']):
-            move = 7
-        elif(energy >= CrossDiagonal and not ship[2]['Destroyed']):
-            move = 5
-        elif(energy >= CrossHorizontal and not ship[4]['Destroyed']):
-            move = 6
-        elif(energy >= Corner and not ship[3]['Destroyed']):
-            move = 4
-        elif(energy >= DoubleVertikal and not ship[1]['Destroyed']):
-            move = choice([1, 2])
+            move=7
+        elif(ship[0]['Destroyed'] and energy >= CrossDiagonal and not ship[2]['Destroyed']):
+            move=5
+        elif(ship[0]['Destroyed'] and ship[2]['Destroyed'] and energy >= CrossHorizontal and not ship[4]['Destroyed']):
+            move=6
+        elif(ship[0]['Destroyed'] and ship[2]['Destroyed'] and ship[4]['Destroyed'] and energy >= Corner and not ship[3]['Destroyed']):
+            move=4
+        elif(ship[0]['Destroyed'] and ship[2]['Destroyed'] and ship[4]['Destroyed'] and ship[3]['Destroyed'] and energy >= DoubleVertikal and not ship[1]['Destroyed']):
+            move=choice([1, 2])
         else:
             move = 1
     else:
