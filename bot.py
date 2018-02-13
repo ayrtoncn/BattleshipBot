@@ -27,7 +27,7 @@ def main(player_key):
     battle_map = initialize_map(map_size)
     if state['Phase'] == 1:
         place_ships()
-        save_json((-1,-1,-1),0)
+        save_json((-1,-1,-1),0,'Miss', False, -1,-1)
         # berisi lokasi kemungkinan dari kapal lawan
     else:
         with open('data.json', 'r') as outfile:
@@ -42,20 +42,30 @@ def main(player_key):
         else:
             destroy = False
             hit = False
+        beforePrevX = data['BeforePrevCoordinate'][0]
+        beforePrevY = data['BeforePrevCoordinate'][1]
         lastX = data['PrevCommand'][0][1]
         lastY = data['PrevCommand'][0][2]
+        before_prev = data['BeforePrev']
         battle_map = update_map(
-            state['OpponentMap']['Cells'], battle_map, map_size, destroy, hit, lastX, lastY)
-        if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state,score)):
+            state['OpponentMap']['Cells'], battle_map, map_size, destroy, hit, lastX, lastY, before_prev, beforePrevX, beforePrevY)
+        if (not deploy_shield(state['PlayerMap']['Owner']['Ships'], map_size, shield_charge, shield_state,score, hit, destroy, lastX, lastY)):
             search_target(state['OpponentMap']['Cells'],
-                          map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map, destroy, score)
+                          map_size, destroyer, energy, state['PlayerMap']['Owner']['Ships'], battle_map, destroy, score, hit, lastX, lastY)
 
 
-def save_json(prev_command, score):
+def save_json(prev_command, score, hit, destroy, lastX, lastY):
     data = {}
     data['PrevCommand'] = []
     data['PrevCommand'].append(prev_command)
     data['Score'] = score
+    if hit and not destroy:
+        data['BeforePrev'] = 'Hit'
+    elif destroy:
+        data['BeforePrev'] = 'Hit'
+    else:
+        data['BeforePrev'] = 'Miss'
+    data['BeforePrevCoordinate'] = [lastX, lastY]
     with open('data.json', 'w') as outfile:
         json.dump(data, outfile)
 
@@ -75,7 +85,7 @@ def initialize_map(map_size):
     return battle_map
 
 
-def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
+def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY, before_prev, beforelastX, beforelastY):
     if not destroy:
         if not hit:
             for cell in opponent_map:
@@ -105,10 +115,16 @@ def update_map(opponent_map, battle_map, map_size, destroy, hit, lastX, lastY):
             for cell in opponent_map:
                 X = cell['X']
                 Y = cell['Y']
-                if (((X == lastX - 1 or X == lastX + 1) and Y == lastY) or (X == lastX and (Y == lastY + 1 or Y == lastY - 1))) and (not cell['Missed'] and not cell['Damaged']):
-                    battle_map[X][Y] = 20
-                else:
-                    battle_map[X][Y] = 0
+                if before_prev == 'Miss':
+                    if (((X == lastX - 1 or X == lastX + 1) and Y == lastY) or (X == lastX and (Y == lastY + 1 or Y == lastY - 1))) and (not cell['Missed'] and not cell['Damaged']):
+                        battle_map[X][Y] = 20
+                    else:
+                        battle_map[X][Y] = 0
+                elif before_prev == 'Hit':
+                    if (((X == lastX - 1 and X == beforelastX - 2) or X == lastX + 1 and X == beforelastX + 2) and Y == lastY) or (((Y == lastY - 1 and Y == beforelastY - 2) or Y == lastY + 1 and Y == beforelastY + 2) and X == lastX):
+                        battle_map[X][Y] = 20
+                    else:
+                        battle_map[X][Y] = 0
     else:
         for cell in opponent_map:
             X = cell['X']
@@ -165,7 +181,7 @@ def find_length(ship_type):
         return 4
 
 
-def deploy_shield(ships, map_size, shield_charge, shield_active, score):
+def deploy_shield(ships, map_size, shield_charge, shield_active, score, hit, destroy, lastX, lastY):
     if (map_size == 7):
         return False
     else:
@@ -191,21 +207,21 @@ def deploy_shield(ships, map_size, shield_charge, shield_active, score):
                         Xhitted = ship['Cells'][countBefore]['X']
                         Yhitted = ship['Cells'][countBefore]['Y']
                     deploy_at = Xhitted, Yhitted
-                    output_shot(*deploy_at, 8,score)
+                    output_shot(*deploy_at, 8,score, hit, destroy, lastX, lastY)
                     return True
         return False
 
 
-def output_shot(x, y, move, score):
+def output_shot(x, y, move, score, hit, destroy, lastX, lastY):
     # move = 1  # 1=fire shot command code
-    save_json((move, x, y), score)
+    save_json((move, x, y), score, hit, destroy, lastX, lastY)
     with open(os.path.join(output_path, command_file), 'w') as f_out:
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
     pass
 
 
-def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map, destroy, score):
+def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map, destroy, score, hit, lastX, lastY):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
@@ -401,7 +417,7 @@ def search_target(opponent_map, map_size, destroyer, energy, ship, battle_map, d
         # prioritaskan seeker missile karena seeker akan menembak target yang berada pada jarak 5X5 dari titik tengah yang kita tuju. jadi akan lebih membantu saat digunakan
     #target = choice(targets)
     target = max(battle_map, targets)
-    output_shot(*target, move, score)
+    output_shot(*target, move, score, hit, destroy, lastX, lastY)
     return
 
 
