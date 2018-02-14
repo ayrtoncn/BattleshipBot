@@ -3,13 +3,13 @@
 ## Informasi
 Authors:  
 Ayrton Cyril / 13516019  
-Dionesius Agung Andika P / 13516043
+Dionesius Agung Andika P / 13516043  
 Dicky Adrian / 13516050
 
 
 ## Deskripsi Singkat
 ### Pendahuluan
-Bot Battleship untuk Entellect Challenge 2017: Battleships ([link](https://github.com/EntelectChallenge/2017-Battleships) github).  
+Bot Battleship untuk Entellect Challenge 2017: Battleships ([link github](https://github.com/EntelectChallenge/2017-Battleships)).  
 Dibuat untuk Tugas Besar I IF2211 - Strategi Algoritma tahun 2018, Program Studi Informatika, Institut Teknologi Bandung.  
 Dibuat dalam bahasa Python 3 menggunakan Python 3 standard libraries.
 
